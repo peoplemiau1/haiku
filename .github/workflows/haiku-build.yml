@@ -1,0 +1,30 @@
+name: Build Haiku
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jam gcc g++ bison flex texinfo autoconf automake awk nasm wget unzip xorriso mtools python3
+
+      # Note: Building full Haiku exceeds GitHub Action time limits (6h)
+      # This step checks if configure works.
+      - name: Configure Haiku
+        run: |
+          mkdir generated.x86_64
+          cd generated.x86_64
+          # Assuming buildtools are cloned alongside haiku repo
+          # In CI, we might need to clone buildtools in a previous step
+          ../configure --build-cross-tools x86_64
