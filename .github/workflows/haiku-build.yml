@@ -19,6 +19,14 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y jam gcc g++ bison flex texinfo autoconf automake gawk nasm wget unzip xorriso mtools python3
 
+      - name: Cache cross-tools
+        uses: actions/cache@v4
+        with:
+          path: generated.x86_64
+          key: ${{ runner.os }}-cross-tools-${{ hashFiles('buildtools/**') }}
+          restore-keys: |
+            ${{ runner.os }}-cross-tools-
+
       - name: Checkout buildtools
         uses: actions/checkout@v4
         with:
@@ -26,9 +34,15 @@ jobs:
           path: buildtools
 
       # Note: Building full Haiku exceeds GitHub Action time limits (6h)
-      # This step checks if configure works.
-      - name: Configure Haiku
+      - name: Configure and Build
         run: |
-          mkdir generated.x86_64
+          if [ ! -d "generated.x86_64" ]; then
+            mkdir generated.x86_64
+            cd generated.x86_64
+            ../configure --cross-tools-source ../buildtools --build-cross-tools x86_64
+          else
+            echo "Using cached cross-tools."
+          fi
           cd generated.x86_64
-          ../configure --cross-tools-source ../buildtools --build-cross-tools x86_64
+          jam -q @nightly-raw
+
